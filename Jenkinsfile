@@ -72,7 +72,9 @@ pipeline {
 
     post {
         always {
-            sh "rm -rf ${VENV_PATH}" || echo "Очистка пропущена"
+            sh '''
+                rm -rf ${VENV_PATH} || echo "Очистка пропущена"
+            '''
             echo "Pipeline завершен. Статус: ${currentBuild.result}"
         }
         success {
