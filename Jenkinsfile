@@ -2,10 +2,12 @@ pipeline {
     agent any
 
     environment {
-        // Имя вашего образа в Docker Hub
-        DOCKER_IMAGE = 'docin82/jenkins-custom'
+        // Имя вашего образа в Docker Hub (замените на ваше)
+        DOCKER_IMAGE = 'docin82/cat-bot'
         // Имя вашего деплоймента в Kubernetes
         DEPLOYMENT_NAME = 'cat-bot'
+        // Путь к виртуальному окружению
+        VENV_PATH = 'venv'
     }
 
     stages {
@@ -16,17 +18,28 @@ pipeline {
             }
         }
 
-        stage('Setup') {
+        stage('Setup Virtual Environment') {
             steps {
-                sh 'python3 -m pip install -r requirements.txt'
-                echo "Зависимости установлены."
+                sh '''
+                    # Создаем виртуальное окружение, если его нет
+                    python3 -m venv ${VENV_PATH} || echo "Виртуальное окружение уже существует"
+                    
+                    # Активируем виртуальное окружение и устанавливаем зависимости
+                    . ${VENV_PATH}/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                '''
+                echo "Виртуальное окружение создано и зависимости установлены."
             }
         }
 
         stage('Test') {
             steps {
-                // Если у вас есть тесты, раскомментируйте следующую строку
-                // sh 'python3 -m unittest discover tests'
+                sh '''
+                    # Активируем виртуальное окружение и запускаем тесты (если они есть)
+                    . ${VENV_PATH}/bin/activate
+                    # python -m unittest discover tests || echo "Тесты не найдены или пропущены"
+                '''
                 echo "Тесты пропущены (или пройдены)."
             }
         }
@@ -34,9 +47,11 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Собираем образ с тегом, содержащим номер сборки
-                   def image = docker.build("docin82/jenkins-custom:${env.BUILD_ID}")
-                    echo "Образ ${DOCKER_IMAGE}:${env.BUILD_ID} собран."
+                    // Активируем виртуальное окружение для сборки Docker-образа
+                    withEnv(["PATH+VENV=${env.WORKSPACE}/${VENV_PATH}/bin"]) {
+                        def image = docker.build("${DOCKER_IMAGE}:${env.BUILD_ID}")
+                        echo "Образ ${DOCKER_IMAGE}:${env.BUILD_ID} собран."
+                    }
                 }
             }
         }
@@ -44,7 +59,6 @@ pipeline {
         stage('Push to Registry') {
             steps {
                 script {
-                    // Загружаем образ в Docker Hub
                     docker.withRegistry('', 'docker-credentials') {
                         docker.image("${DOCKER_IMAGE}:${env.BUILD_ID}").push("latest")
                         docker.image("${DOCKER_IMAGE}:${env.BUILD_ID}").push("${env.BUILD_ID}")
@@ -57,7 +71,6 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Обновляем образ в существующем Deployment
                     sh "kubectl set image deployment/${DEPLOYMENT_NAME} ${DEPLOYMENT_NAME}=${DOCKER_IMAGE}:${env.BUILD_ID}"
                     echo "Деплоймент ${DEPLOYMENT_NAME} обновлен."
                 }
@@ -67,6 +80,8 @@ pipeline {
 
     post {
         always {
+            // Очистка виртуального окружения после сборки (опционально)
+            sh "rm -rf ${VENV_PATH}" || echo "Очистка пропущена"
             echo "Pipeline завершен. Статус: ${currentBuild.result}"
         }
         success {
