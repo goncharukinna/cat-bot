@@ -2,11 +2,8 @@ pipeline {
     agent any
 
     environment {
-        // Имя вашего образа в Docker Hub (замените на ваше)
         DOCKER_IMAGE = 'docin82/cat-bot'
-        // Имя вашего деплоймента в Kubernetes
         DEPLOYMENT_NAME = 'cat-bot'
-        // Путь к виртуальному окружению
         VENV_PATH = 'venv'
     }
 
@@ -21,10 +18,7 @@ pipeline {
         stage('Setup Virtual Environment') {
             steps {
                 sh '''
-                    # Создаем виртуальное окружение, если его нет
-                    python3 -m venv ${VENV_PATH} || echo "Виртуальное окружение уже существует"
-                    
-                    # Активируем виртуальное окружение и устанавливаем зависимости
+                    python3 -m venv ${VENV_PATH}
                     . ${VENV_PATH}/bin/activate
                     pip install --upgrade pip
                     pip install -r requirements.txt
@@ -36,7 +30,6 @@ pipeline {
         stage('Test') {
             steps {
                 sh '''
-                    # Активируем виртуальное окружение и запускаем тесты (если они есть)
                     . ${VENV_PATH}/bin/activate
                     # python -m unittest discover tests || echo "Тесты не найдены или пропущены"
                 '''
@@ -47,7 +40,6 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Активируем виртуальное окружение для сборки Docker-образа
                     withEnv(["PATH+VENV=${env.WORKSPACE}/${VENV_PATH}/bin"]) {
                         def image = docker.build("${DOCKER_IMAGE}:${env.BUILD_ID}")
                         echo "Образ ${DOCKER_IMAGE}:${env.BUILD_ID} собран."
@@ -80,7 +72,6 @@ pipeline {
 
     post {
         always {
-            // Очистка виртуального окружения после сборки (опционально)
             sh "rm -rf ${VENV_PATH}" || echo "Очистка пропущена"
             echo "Pipeline завершен. Статус: ${currentBuild.result}"
         }
