@@ -46,7 +46,7 @@ pipeline {
             steps {
                 script {
                     withEnv(["PATH+VENV=${env.WORKSPACE}/${VENV_PATH}/bin"]) {
-                        def image = docker.build("${DOCKER_IMAGE}:${env.BUILD_ID}")
+                        def image = docker.build("${DOCKER_IMAGE}:${env.BUILD_ID}", ".")
                         echo "Образ ${DOCKER_IMAGE}:${env.BUILD_ID} собран."
                     }
                 }
