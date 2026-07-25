@@ -1,9 +1,6 @@
 pipeline {
     agent {
-        docker {
-            image 'docin82/python-docker-agent:latest'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
+        label 'python-agent'
     }
 
     environment {
