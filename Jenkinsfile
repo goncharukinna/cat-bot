@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label 'python-agent'
-    }
+    agent any
 
     environment {
         DOCKER_IMAGE = 'docin82/cat-bot'
