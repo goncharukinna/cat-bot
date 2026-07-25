@@ -1,9 +1,7 @@
 pipeline {
+    // Используем агента с меткой 'python-agent' из Kubernetes
     agent {
-        docker {
-            image 'docker:20.10'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
+        label 'python-agent'
     }
 
     environment {
@@ -17,16 +15,6 @@ pipeline {
             steps {
                 checkout scm
                 echo "Код успешно склонирован!"
-            }
-        }
-
-        stage('Setup Docker') {
-            steps {
-                sh '''
-                    echo "=== Проверка Docker ==="
-                    docker --version
-                    docker ps
-                '''
             }
         }
 
@@ -55,7 +43,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    withEnv(["PATH+VENV=${env.WORKSPACE}/${VENV_PATH}/bin"]) {
+                    withEnv(["PATH+VENV=${env.WORKSHEET}/${VENV_PATH}/bin"]) {
                         def image = docker.build("${DOCKER_IMAGE}:${env.BUILD_ID}")
                         echo "Образ ${DOCKER_IMAGE}:${env.BUILD_ID} собран."
                     }
