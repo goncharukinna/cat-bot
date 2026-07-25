@@ -20,14 +20,12 @@ pipeline {
             }
         }
 
-        stage('Check Docker') {
+        stage('Setup Docker') {
             steps {
                 sh '''
                     echo "=== Проверка Docker ==="
-                    docker --version || echo "Docker не установлен"
-                    docker ps || echo "Нет доступа к Docker-сокету"
-                    groups
-                    ls -la /var/run/docker.sock || echo "Сокет не найден"
+                    docker --version
+                    docker ps
                 '''
             }
         }
