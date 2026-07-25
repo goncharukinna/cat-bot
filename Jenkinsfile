@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'docker:20.10'
+            image 'python:3.11-slim'
             args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
@@ -17,6 +17,18 @@ pipeline {
             steps {
                 checkout scm
                 echo "Код успешно склонирован!"
+            }
+        }
+
+        stage('Check Docker') {
+            steps {
+                sh '''
+                    echo "=== Проверка Docker ==="
+                    docker --version || echo "Docker не установлен"
+                    docker ps || echo "Нет доступа к Docker-сокету"
+                    groups
+                    ls -la /var/run/docker.sock || echo "Сокет не найден"
+                '''
             }
         }
 
