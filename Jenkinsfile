@@ -1,5 +1,11 @@
 pipeline {
-    agent any
+    // Используем Docker-контейнер с Python для сборки
+    agent {
+        docker {
+            image 'python:3.11-slim'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
 
     environment {
         DOCKER_IMAGE = 'docin82/cat-bot'
@@ -72,9 +78,7 @@ pipeline {
 
     post {
         always {
-            sh '''
-                rm -rf ${VENV_PATH} || echo "Очистка пропущена"
-            '''
+            sh "rm -rf ${VENV_PATH}" || echo "Очистка пропущена"
             echo "Pipeline завершен. Статус: ${currentBuild.result}"
         }
         success {
