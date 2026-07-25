@@ -1,7 +1,9 @@
 pipeline {
-    // Используем агента с меткой 'python-agent' из Kubernetes
     agent {
-        label 'python-agent'
+        docker {
+            image 'docin82/python-docker-agent:latest'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
     }
 
     environment {
@@ -43,7 +45,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    withEnv(["PATH+VENV=${env.WORKSHEET}/${VENV_PATH}/bin"]) {
+                    withEnv(["PATH+VENV=${env.WORKSPACE}/${VENV_PATH}/bin"]) {
                         def image = docker.build("${DOCKER_IMAGE}:${env.BUILD_ID}")
                         echo "Образ ${DOCKER_IMAGE}:${env.BUILD_ID} собран."
                     }
