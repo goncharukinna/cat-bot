@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        label 'python-agent'
+    }
 
     environment {
         DOCKER_IMAGE = 'docin82/cat-bot'
@@ -12,6 +14,17 @@ pipeline {
             steps {
                 checkout scm
                 echo "Код успешно склонирован!"
+            }
+        }
+
+        stage('Test Ansible') {
+            steps {
+                sh '''
+                    echo "=== Проверка Ansible ==="
+                    ansible --version
+                    which ansible
+                '''
+                echo "Ansible готов к работе!"
             }
         }
 
