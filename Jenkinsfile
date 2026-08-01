@@ -2,6 +2,7 @@ pipeline {
     agent {
         kubernetes {
             label 'python-agent'
+            inheritFrom ''
             yaml '''
 apiVersion: v1
 kind: Pod
