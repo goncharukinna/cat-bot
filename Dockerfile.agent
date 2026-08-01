@@ -1,0 +1,20 @@
+# Базовый образ с Java и Jenkins-агентом
+FROM jenkins/inbound-agent:latest
+
+# Переключиться на root для установки пакетов
+USER root
+
+# Установка Python, pip, Ansible, Docker CLI, kubectl и python3-venv
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip ansible docker.io kubectl python3-venv && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Создать рабочую директорию для агента
+RUN mkdir -p /home/jenkins/agent && chown jenkins:jenkins /home/jenkins/agent
+
+# Вернуться к пользователю jenkins
+USER jenkins
+
+# Установить рабочую директорию
+WORKDIR /home/jenkins/agent
