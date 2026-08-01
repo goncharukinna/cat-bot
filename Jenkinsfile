@@ -37,6 +37,7 @@ spec:
     }
 
     environment {
+        NAMESPACE = 'default'
         DOCKER_IMAGE = 'docin82/cat-bot'
         DEPLOYMENT_NAME = 'cat-bot'
         CONTAINER_NAME = 'jenkins-custom'   // добавьте эту строку
@@ -131,7 +132,7 @@ spec:
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    sh "kubectl set image deployment/${DEPLOYMENT_NAME} ${CONTAINER_NAME}=${DOCKER_IMAGE}:${env.BUILD_ID}"
+                    sh "kubectl set image deployment/${DEPLOYMENT_NAME} ${CONTAINER_NAME}=${DOCKER_IMAGE}:${env.BUILD_ID} -n ${NAMESPACE}"
                     echo "Деплоймент ${DEPLOYMENT_NAME} обновлен."
                 }
             }
