@@ -1,18 +1,48 @@
 pipeline {
-    // Запуск на агенте с меткой 'python-agent'
-    agent { 
-        label 'python-agent' 
+    agent {
+        kubernetes {
+            label 'python-agent'
+            yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  securityContext:
+    runAsUser: 0
+  containers:
+  - name: jnlp
+    image: docin82/jenkins-python-agent:latest
+    imagePullPolicy: Always
+    securityContext:
+      privileged: true
+    env:
+    - name: JENKINS_URL
+      value: "http://jenkins.jenkins.svc.cluster.local:8080/"
+    - name: JENKINS_TUNNEL
+      value: "jenkins-agent.jenkins.svc.cluster.local:50000"
+    volumeMounts:
+    - mountPath: /var/run/docker.sock
+      name: docker-socket
+    - mountPath: /home/jenkins/agent
+      name: workspace-volume
+    workingDir: /home/jenkins/agent
+  volumes:
+  - name: docker-socket
+    hostPath:
+      path: /var/run/docker.sock
+  - name: workspace-volume
+    emptyDir: {}
+'''
+        }
     }
 
-    // Переменные окружения
     environment {
         DOCKER_IMAGE = 'docin82/cat-bot'
         DEPLOYMENT_NAME = 'cat-bot'
+        CONTAINER_NAME = 'jenkins-custom'   // добавьте эту строку
         VENV_PATH = 'venv'
     }
 
     stages {
-        // 1. Клонирование кода
         stage('Checkout') {
             steps {
                 checkout scm
@@ -20,14 +50,17 @@ pipeline {
             }
         }
 
-        // 2. Проверка наличия всех необходимых инструментов
         stage('Check Tools') {
             steps {
                 sh '''
                     echo "=== Проверка инструментов ==="
                     for cmd in python3 pip3 ansible docker kubectl; do
                         if command -v $cmd &> /dev/null; then
-                            echo "✅ $cmd: $($cmd --version 2>&1 | head -n1)"
+                            if [ "$cmd" = "kubectl" ]; then
+                                echo "✅ $cmd: $(kubectl version --client 2>&1 | head -n1)"
+                            else
+                                echo "✅ $cmd: $($cmd --version 2>&1 | head -n1)"
+                            fi
                         else
                             echo "❌ $cmd не найден"
                             exit 1
@@ -38,7 +71,6 @@ pipeline {
             }
         }
 
-        // 3. Проверка Ansible (оставляем для совместимости)
         stage('Test Ansible') {
             steps {
                 sh '''
@@ -50,7 +82,6 @@ pipeline {
             }
         }
 
-        // 4. Создание виртуального окружения и установка зависимостей
         stage('Setup Virtual Environment') {
             steps {
                 sh '''
@@ -63,7 +94,6 @@ pipeline {
             }
         }
 
-        // 5. Запуск тестов
         stage('Test') {
             steps {
                 sh '''
@@ -74,7 +104,6 @@ pipeline {
             }
         }
 
-        // 6. Сборка Docker-образа
         stage('Build Docker Image') {
             steps {
                 script {
@@ -86,7 +115,6 @@ pipeline {
             }
         }
 
-        // 7. Загрузка образа в Docker Hub
         stage('Push to Registry') {
             steps {
                 script {
@@ -99,18 +127,16 @@ pipeline {
             }
         }
 
-        // 8. Деплой в Kubernetes
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    sh "kubectl set image deployment/${DEPLOYMENT_NAME} ${DEPLOYMENT_NAME}=${DOCKER_IMAGE}:${env.BUILD_ID}"
+                    sh "kubectl set image deployment/${DEPLOYMENT_NAME} ${CONTAINER_NAME}=${DOCKER_IMAGE}:${env.BUILD_ID}"
                     echo "Деплоймент ${DEPLOYMENT_NAME} обновлен."
                 }
             }
         }
     }
 
-    // Действия после завершения пайплайна
     post {
         always {
             sh '''
