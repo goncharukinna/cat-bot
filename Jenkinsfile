@@ -1,8 +1,10 @@
 pipeline {
-    agent {
-        label 'python-agent'
+    // Запуск на агенте с меткой 'python-agent'
+    agent { 
+        label 'python-agent' 
     }
 
+    // Переменные окружения
     environment {
         DOCKER_IMAGE = 'docin82/cat-bot'
         DEPLOYMENT_NAME = 'cat-bot'
@@ -10,6 +12,7 @@ pipeline {
     }
 
     stages {
+        // 1. Клонирование кода
         stage('Checkout') {
             steps {
                 checkout scm
@@ -17,6 +20,25 @@ pipeline {
             }
         }
 
+        // 2. Проверка наличия всех необходимых инструментов
+        stage('Check Tools') {
+            steps {
+                sh '''
+                    echo "=== Проверка инструментов ==="
+                    for cmd in python3 pip3 ansible docker kubectl; do
+                        if command -v $cmd &> /dev/null; then
+                            echo "✅ $cmd: $($cmd --version 2>&1 | head -n1)"
+                        else
+                            echo "❌ $cmd не найден"
+                            exit 1
+                        fi
+                    done
+                    echo "Все инструменты установлены."
+                '''
+            }
+        }
+
+        // 3. Проверка Ansible (оставляем для совместимости)
         stage('Test Ansible') {
             steps {
                 sh '''
@@ -28,6 +50,7 @@ pipeline {
             }
         }
 
+        // 4. Создание виртуального окружения и установка зависимостей
         stage('Setup Virtual Environment') {
             steps {
                 sh '''
@@ -40,16 +63,18 @@ pipeline {
             }
         }
 
+        // 5. Запуск тестов
         stage('Test') {
             steps {
                 sh '''
                     . ${VENV_PATH}/bin/activate
-                    # python -m unittest discover tests || echo "Тесты не найдены или пропущены"
+                    python -m unittest discover tests || echo "Тесты не найдены или пропущены"
                 '''
                 echo "Тесты пропущены (или пройдены)."
             }
         }
 
+        // 6. Сборка Docker-образа
         stage('Build Docker Image') {
             steps {
                 script {
@@ -61,6 +86,7 @@ pipeline {
             }
         }
 
+        // 7. Загрузка образа в Docker Hub
         stage('Push to Registry') {
             steps {
                 script {
@@ -73,6 +99,7 @@ pipeline {
             }
         }
 
+        // 8. Деплой в Kubernetes
         stage('Deploy to Kubernetes') {
             steps {
                 script {
@@ -83,6 +110,7 @@ pipeline {
         }
     }
 
+    // Действия после завершения пайплайна
     post {
         always {
             sh '''
