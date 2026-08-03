@@ -1,11 +1,16 @@
-require("dotenv").config();
+require('dotenv').config();
 
-const { Telegraf } = require("telegraf");
+const { Telegraf } = require('telegraf');
+const https = require('https');
 
-const bot = new Telegraf(process.env.BOT_TOKEN);
+// Принудительно используем только IPv4
+const agent = new https.Agent({ family: 4 });
+
+const bot = new Telegraf(process.env.BOT_TOKEN, {
+  telegram: { agent }
+});
 
 const chatId = 5209781777;
-
 const intervalMs = 5000;
 
 const getCatUrl = () =>
@@ -14,7 +19,8 @@ const getCatUrl = () =>
 const sendCat = () => {
   bot.telegram
     .sendPhoto(chatId, getCatUrl())
-    .then(() => setTimeout(sendCat, intervalMs));
+    .then(() => setTimeout(sendCat, intervalMs))
+    .catch((err) => console.error('Error sending photo:', err.message));
 };
 
 sendCat();
