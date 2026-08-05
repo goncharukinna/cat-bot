@@ -1,3 +1,5 @@
+process.stdout.write('Starting process...\n');
+
 require('dotenv').config();
 
 const { Telegraf } = require('telegraf');
