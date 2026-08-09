@@ -65,8 +65,15 @@ async function getImageUrl() {
     }
     case 'gif':
       return fetchCatGif();
-    default: // 'cat'
-      return 'https://cataas.com/cat';
+    default: {
+      // режим 'cat' – два источника для разнообразия
+      const sources = [
+        fetchCat,
+        async () => `https://cataas.com/cat?${Math.random()}`
+      ];
+      const pick = sources[Math.floor(Math.random() * sources.length)];
+      return await pick();
+    }
   }
 }
 
