@@ -25,9 +25,9 @@ async function fetchCat() {
   try {
     const res = await fetch('https://api.thecatapi.com/v1/images/search');
     const data = await res.json();
-    return data[0]?.url || 'https://cataas.com/cat';
+    return data[0]?.url || `https://cataas.com/cat?${Math.random()}`;
   } catch {
-    return 'https://cataas.com/cat';
+    return `https://cataas.com/cat?${Math.random()}`;
   }
 }
 
@@ -111,6 +111,12 @@ bot.command('mode', (ctx) => {
       `Используйте:\n/mode cat – только котики\n/mode mixed – смешанные животные\n/mode gif – гифки`
     );
   }
+});
+
+// /status - текущий режим
+bot.command('status', (ctx) => {
+  const modeText = currentMode === 'cat' ? '🐱 только котики' : currentMode === 'mixed' ? '🐾 смешанные животные' : '🎞️ гифки';
+  ctx.reply(`📊 Текущий режим: ${modeText}\nОтправка ${isSending ? 'активна ✅' : 'остановлена ⏸️'}`);
 });
 
 // ---- Основной цикл отправки ----
