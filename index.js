@@ -136,15 +136,31 @@ const sendCat = async () => {
   }
 };
 
-// ---- Запуск ----
+// ---- Запуск бота с повторными попытками ----
 
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught exception:', err);
-});
+async function startBot() {
+  try {
+    // Сброс вебхука (на случай, если он мешает polling)
+    await bot.telegram.setWebhook({ url: '' });
+    console.log('Webhook cleared');
+  } catch (err) {
+    console.warn('Could not clear webhook:', err.message);
+  }
+
+  // Пытаемся запустить polling
+  bot.launch({ dropPendingUpdates: true })
+    .then(() => {
+      console.log('Bot launched for commands (polling started)');
+    })
+    .catch((err) => {
+      console.error('Launch error:', err.message);
+      console.log('Will retry in 10 seconds...');
+      setTimeout(startBot, 10000);
+    });
+}
 
 console.log('Bot is ready, starting send loop...');
 sendCat();
 
-bot.launch()
-  .then(() => console.log('Bot launched for commands'))
-  .catch(err => console.error('Launch error:', err));
+// Запускаем бота с повторными попытками
+startBot();
