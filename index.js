@@ -173,11 +173,11 @@ bot.start((ctx) => {
     state.isFirstStart = false;
   }
 
-  // Если отправка остановлена, запускаем
-  if (!state.isSending) {
+  // Всегда запускаем цикл отправки, если таймер ещё не создан
+  if (!state.timer) {
     state.isSending = true;
-    ctx.reply('▶️ Отправка фото возобновлена!');
     startSendingForChat(chatId);
+    ctx.reply('▶️ Начинаю отправку фото!');
   } else {
     ctx.reply('✅ Бот уже работает и отправляет фото');
   }
