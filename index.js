@@ -18,6 +18,7 @@ const chatId = '5209781777';
 const intervalMs = 5000;
 let isSending = true;
 let currentMode = 'cat'; // 'cat', 'mixed', 'gif'
+let isFirstStart = true;
 
 // ---- Вспомогательные функции для получения изображений ----
 
@@ -94,6 +95,25 @@ bot.command('stop', (ctx) => {
 
 // /start – возобновление отправки
 bot.start((ctx) => {
+  // Приветствие только при первом запуске
+  if (isFirstStart) {
+    ctx.reply(
+      `🐱 Привет! Я КотоБот — отправляю милых животных каждые 5 секунд.
+
+Команды:
+/mode cat — только котики
+/mode mixed — котики, собачки, лисички
+/mode gif — гифки с котами
+/stop — приостановить отправку
+/start — возобновить отправку
+/hello — проверить, жив ли бот
+
+Приятного общения! 🐱`
+    );
+    isFirstStart = false;
+  }
+
+  // Если отправка остановлена, запускаем её
   if (!isSending) {
     isSending = true;
     ctx.reply('▶️ Отправка фото возобновлена!');
