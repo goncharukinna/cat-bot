@@ -1,0 +1,5 @@
+.env
+kubeconfig.yaml
+jenkins-cli.jar
+node_modules/
+*.log
