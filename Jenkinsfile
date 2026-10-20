@@ -22,7 +22,7 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 container('node') {
-                    sh 'npm install'
+                    sh 'npm install --registry=https://registry.npmmirror.com'
                 }
             }
         }
