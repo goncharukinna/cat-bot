@@ -1,6 +1,3 @@
-cd ~/cat-bot
-
-cat > Jenkinsfile << 'EOF'
 pipeline {
     agent {
         kubernetes {
@@ -103,4 +100,4 @@ pipeline {
         }
     }
 }
-EOF
+
