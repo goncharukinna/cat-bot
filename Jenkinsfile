@@ -1,38 +1,8 @@
 pipeline {
     agent {
         kubernetes {
-            label 'python-agent'
-            inheritFrom ''
-            yaml '''
-apiVersion: v1
-kind: Pod
-spec:
-  securityContext:
-    runAsUser: 0
-  containers:
-  - name: jnlp
-    image: docin82/jenkins-python-agent:latest
-    imagePullPolicy: Always
-    securityContext:
-      privileged: true
-    env:
-    - name: JENKINS_URL
-      value: "http://jenkins.jenkins.svc.cluster.local:8080/"
-    - name: JENKINS_TUNNEL
-      value: "jenkins-agent.jenkins.svc.cluster.local:50000"
-    volumeMounts:
-    - mountPath: /var/run/docker.sock
-      name: docker-socket
-    - mountPath: /home/jenkins/agent
-      name: workspace-volume
-    workingDir: /home/jenkins/agent
-  volumes:
-  - name: docker-socket
-    hostPath:
-      path: /var/run/docker.sock
-  - name: workspace-volume
-    emptyDir: {}
-'''
+            label 'node-agent'
+            yamlFile 'pod.yaml'
         }
     }
 
@@ -129,28 +99,26 @@ spec:
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Update GitOps Repo') {
             steps {
-                script {
-                    sh "kubectl set image deployment/${DEPLOYMENT_NAME} ${CONTAINER_NAME}=${DOCKER_IMAGE}:${env.BUILD_ID} -n ${NAMESPACE}"
-                    echo "Деплоймент ${DEPLOYMENT_NAME} обновлен."
+                container('git') {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'github-token',
+                        usernameVariable: 'GIT_USER',
+                        passwordVariable: 'GIT_TOKEN'
+                    )]) {
+                        sh '''
+                            git clone https://${GIT_USER}:${GIT_TOKEN}@github.com/goncharukinna/bots-gitops.git /tmp/gitops
+                            cd /tmp/gitops
+                            sed -i "s|image: docin82/cat-bot:.*|image: docin82/cat-bot:${BUILD_ID}|" manifests/cat-bot/deployment.yaml
+                            git config user.name "Jenkins"
+                            git config user.email "jenkins@example.com"
+                            git add manifests/cat-bot/deployment.yaml
+                            git commit -m "cat-bot: update to ${BUILD_ID} [skip ci]"
+                            git push
+                            echo "✅ GitOps обновлён до версии ${BUILD_ID}"
+                        '''
+                    }
                 }
             }
         }
-    }
-
-    post {
-        always {
-            sh '''
-                rm -rf ${VENV_PATH} || echo "Очистка пропущена"
-            '''
-            echo "Pipeline завершен. Статус: ${currentBuild.result}"
-        }
-        success {
-            echo "Поздравляю! Сборка успешна! 🎉"
-        }
-        failure {
-            echo "Упс! Что-то пошло не так. Проверьте логи."
-        }
-    }
-}
